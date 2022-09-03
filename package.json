@@ -1,0 +1,17 @@
+{
+  "name": "node-xmlhttprequest",
+  "version": "1.0.0",
+  "description": "A spec-compliant version of XMLHttpRequest",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "XMLHttpRequest"
+  ],
+  "author": "KhafraDev",
+  "license": "MIT",
+  "dependencies": {
+    "undici": "github:nodejs/undici"
+  }
+}
