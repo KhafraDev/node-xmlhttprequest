@@ -47,6 +47,8 @@ const { getGlobalDispatcher, getGlobalOrigin } = require('undici')
 const assert = require('assert')
 const { Blob } = require('buffer')
 const { toUSVString } = require('util')
+const { spawnSync } = require('child_process')
+const { join } = require('path')
 
 const XMLHttpRequestReadyState = {
   UNSENT: 0,
@@ -122,7 +124,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
     }
 
     method = webidl.converters.ByteString(method)
-    url = webidl.converters.USVString(method)
+    url = webidl.converters.USVString(url)
     async = webidl.converters.boolean(async)
     username = username !== null ? webidl.converters.USVString(username) : null
     password = password !== null ? webidl.converters.USVString(username) : null
@@ -712,51 +714,39 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
       // 12. Otherwise, if this’s synchronous flag is set:
 
       // 1. Let processedResponse be false.
-      let processedResponse = false
 
       // 2. Let processResponseConsumeBody, given a response and
       //    nullOrFailureOrBytes, be these steps:
-      const processResponseConsumeBody = (response, nullOrFailureBytes) => {
-        // 1. If nullOrFailureOrBytes is not failure, then set this’s
-        //    response to response.
-        if (nullOrFailureBytes !== 'failure') {
-          this[kResponse] = response
-        }
-
-        // 2. If nullOrFailureOrBytes is a byte sequence, then append
-        //    nullOrFailureOrBytes to this’s received bytes.
-        if (nullOrFailureBytes !== null) {
-          this[kReceivedBytes].push(...nullOrFailureBytes)
-        }
-
-        // 3. Set processedResponse to true.
-        processedResponse = true
-      }
 
       // 3. Set this’s fetch controller to the result of fetching req with
       //    processResponseConsumeBody set to processResponseConsumeBody and
       //    useParallelQueue set to true.
-      this[kFetchController] = fetching({
-        request: req,
-        processResponseConsumeBody,
-        useParallelQueue: true,
-        dispatcher: getGlobalDispatcher()
-      })
 
       // 4. Let now be the present time.
-      const now = Date.now()
 
       // 5. Pause until either processedResponse is true or this’s timeout
       //    is not 0 and this’s timeout milliseconds have passed since now.
       // eslint-disable-next-line no-unmodified-loop-condition
-      while (!processedResponse && (this[kTimeout] !== 0 && Date.now() - now > this[kTimeout]));
+      
+      const reqString = JSON.stringify(req, (key, value) => {
+        if (key === 'headersList') {
+          return [...req.headersList.entries()]
+        }
+      
+        return value
+      })
+
+      const { stdout } = spawnSync(process.argv[0], [join(__dirname, 'sync.js'), reqString, this[kTimeout]])
+
+      const response = JSON.parse(stdout)
+      response.kResponse.headersList = new HeadersList(response.kResponse.headersList)
+      response.kResponse.urlList = response.kResponse.urlList.map(url => new URL(url))
+
+      this[kResponse] = response.kResponse
+      this[kReceivedBytes] = response.kReceivedBytes
 
       // 6. If processedResponse is false, then set this’s timed out flag and
       //    terminate this’s fetch controller.
-      if (processedResponse === false) {
-        this[kTimedOutFlag] = true
-        this[kFetchController].terminate('terminated')
-      }
 
       // 7. Run handle response end-of-body for this.
       handleResponseEndOfBody(this)
