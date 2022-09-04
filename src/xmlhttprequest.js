@@ -460,7 +460,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
     this[kTimedOutFlag] = undefined
 
     // 9. If req’s body is null, then set this’s upload complete flag.
-    if (req.body === null) {
+    if (req.body == null) {
       this[kUploadCompleteFlag] = true
     }
 
@@ -591,7 +591,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
 
         // 7. If this’s response’s body is null, then run handle response
         //    end-of-body for this and return.
-        if (this[kResponse].body === null) {
+        if (this[kResponse].body == null) {
           handleResponseEndOfBody(this)
           return
         }
@@ -754,10 +754,15 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
           statusText,
           type,
           urlList: [new URL(url)],
-          headersList: headers
+          headersList: headers,
+          body: {
+            source: new Uint8Array(body)
+          }
         })
 
-        this[kReceivedBytes] = body ? new Uint8Array(body) : []
+        if (body) {
+          this[kReceivedBytes].push(...new Uint8Array(body))
+        }
       } else {
         this[kResponse] = makeNetworkError(message.error)
       }
@@ -1011,7 +1016,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
       assert(this[kResponseType] === 'json')
 
       // 2. If this’s response’s body is null, then return null.
-      if (this[kResponseType] === null) {
+      if (this[kResponse].body == null) {
         return null
       }
 

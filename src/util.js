@@ -120,7 +120,7 @@ export function extractLengthFromHeadersList (headers) {
  */
 export function getTextResponse (xhr) {
   // 1. If xhr’s response’s body is null, then return the empty string.
-  if (xhr[kReceivedBytes].length === 0) {
+  if (xhr[kResponse].body == null) {
     return ''
   }
 

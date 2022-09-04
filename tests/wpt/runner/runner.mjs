@@ -58,7 +58,9 @@ export class WPTRunner {
     })
 
     worker.on('message', (message) => {
-      console.log({ message })
+      if (message.result?.status === 1) {
+        console.log({ message })
+      }
     })
   }
 
