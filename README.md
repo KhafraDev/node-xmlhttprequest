@@ -31,8 +31,8 @@ xhr.send()
 
 Synchronous XHR requests work too, without writing files as other packages do. Note that it does use worker threads.
 
-**Warning**
-This option is only left in for compatibility reasons. It is not recommended for any reason as it *will* block the thread.
+> **Warning**
+> This option is only left in for compatibility reasons. It is not recommended for any reason as it *will* block the thread.
 
 ```js
 import { XMLHttpRequest } from 'node-xmlhttprequest'
@@ -48,8 +48,8 @@ const html = xhr.responseText
 
 ## Relative URLs
 
-**Note**
-A relative URL is a URL that only contains a path.
+> **Note**
+> A relative URL is a URL that only contains a path.
 
 Relative URLs do **not** behave the same as the browser. You must use [undici](https://github.com/nodejs/undici) to set a relative url, otherwise an error will be thrown.
 
