@@ -11,7 +11,7 @@ if (ac) {
 
 try {
   const response = await fetch(request.url, {
-    signal: ac.signal,
+    signal: ac?.signal,
     ...request
   })
 

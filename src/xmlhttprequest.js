@@ -42,7 +42,7 @@ import { getGlobalDispatcher, getGlobalOrigin } from 'undici'
 import assert from 'assert'
 import { Blob } from 'buffer'
 import { toUSVString } from 'util'
-import { Worker, MessageChannel, receiveMessageOnPort } from 'worker_threads';
+import { Worker, MessageChannel, receiveMessageOnPort, isMainThread } from 'worker_threads';
 import { fileURLToPath } from 'url'
 import { join } from 'path'
 
@@ -756,7 +756,8 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
           urlList: [new URL(url)],
           headersList: headers
         })
-        this[kReceivedBytes] = body.buffer
+
+        this[kReceivedBytes] = body ? new Uint8Array(body) : []
       } else {
         this[kResponse] = makeNetworkError(message.error)
       }
@@ -912,7 +913,15 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
       throw new TypeError('illegal invocation')
     }
 
+    const old = value
     value = responseTypeEnum(value)
+
+    // This is referred to as an "ignored" type in WPTs. The spec
+    // doesn't mention it. At all.
+    if (old !== value) {
+      this[kResponseType] = ''
+      return
+    }
 
     // The responseType setter steps are:
 
@@ -922,11 +931,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
     // 2. If this’s state is loading or done, then throw an
     //    "InvalidStateError" DOMException.
     if (this[kState] === 'done' || this[kState] === 'loading') {
-      // Note: WPTs expect the condition below to ONLY run when
-      // the value is correct (defaults to '').
-      if (value !== '') {
-        throw new DOMException('invalid state', 'InvalidStateError')
-      }
+      throw new DOMException('invalid state', 'InvalidStateError')
     }
 
     // 3. If the current global object is a Window object and this’s

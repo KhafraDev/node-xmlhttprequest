@@ -2,7 +2,6 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { readdirSync, statSync } from 'node:fs'
-import { url } from '../../server/server.mjs'
 
 const testPath = fileURLToPath(join(import.meta.url, '../..'))
 
@@ -16,9 +15,13 @@ export class WPTRunner {
   /** @type {string[]} */
   #initScripts = []
 
-	constructor (folder) {
+  /** @type {string} */
+  #url
+
+	constructor (folder, url) {
 		this.#folderPath = join(testPath, folder)
     this.#files.push(...WPTRunner.walk(this.#folderPath, () => true))
+    this.#url = url
 	}
 
 	static walk (dir, fn) {
@@ -50,7 +53,7 @@ export class WPTRunner {
       workerData: {
         initScripts: this.#initScripts,
         paths: this.#files,
-        url
+        url: this.#url
       }
     })
 

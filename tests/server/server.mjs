@@ -1,15 +1,13 @@
 import { createServer } from 'node:http'
-import { once } from 'events'
+import { once } from 'node:events'
+import { parentPort } from 'node:worker_threads'
 
 const server = createServer((req, res) => {
+	res.write('Some more body')
 	res.end('body')
 }).listen(0)
 
 await once(server, 'listening')
 
-const url = `http://localhost:${server.address().port}`
-
-export {
-  server,
-  url
-}
+parentPort?.postMessage(`http://localhost:${server.address().port}`) ??
+console.log(`http://localhost:${server.address().port}`)

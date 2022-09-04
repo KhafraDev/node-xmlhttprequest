@@ -1,8 +1,9 @@
-import { workerData, parentPort } from 'node:worker_threads'
+import { workerData, parentPort, isMainThread } from 'node:worker_threads'
 import { runInThisContext } from 'node:vm'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { setGlobalOrigin } from 'undici'
+import { XMLHttpRequest } from '../../../index.js'
 
 const { initScripts, paths, url } = workerData
 
@@ -10,13 +11,17 @@ if (typeof require === 'undefined') {
   globalThis.require = createRequire(import.meta.url) 
 }
 
+globalThis.XMLHttpRequest = XMLHttpRequest
+globalThis.XMLHttpRequestUpload = (new XMLHttpRequest()).upload
+globalThis.FormData ??= require('undici').FormData
+
 // self is required by testharness
 // GLOBAL is required by self
 runInThisContext(`
   globalThis.self = globalThis
   globalThis.GLOBAL = {
     isWorker () {
-      return true
+      return false
     },
     isShadowRealm () {
       return false
@@ -24,7 +29,7 @@ runInThisContext(`
   }
 `)
 
-require('../resources/testharness')
+require('../resources/testharness.cjs')
 
 // add_*_callback comes from testharness
 // stolen from node's wpt test runner

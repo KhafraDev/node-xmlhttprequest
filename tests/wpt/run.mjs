@@ -1,12 +1,17 @@
 import { WPTRunner } from './runner/runner.mjs'
+import { Worker } from 'worker_threads'
+import { join } from 'path'
+import { fileURLToPath } from 'url'
+import { once } from 'events'
 
-const runner = new WPTRunner('xhr')
+const workerPath = fileURLToPath(join(import.meta.url, '../../server/server.mjs'))
 
-// https://github.com/web-platform-tests/wpt/blob/master/xhr/idlharness.any.js
-runner.addInitScript(`
-  globalThis.XMLHttpRequest = require('../../../index.js')
-  globalThis.XMLHttpRequestUpload = (new XMLHttpRequest()).upload
-  globalThis.FormData ??= require('undici').FormData
-`)
+const worker = new Worker(workerPath)
+
+export const url = process.argv[2] ?? (await once(worker, 'message'))[0]
+
+const runner = new WPTRunner('xhr', url)
 
 runner.run()
+
+await worker.terminate()
