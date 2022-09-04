@@ -47,7 +47,7 @@ const { getGlobalDispatcher, getGlobalOrigin } = require('undici')
 const assert = require('assert')
 const { Blob } = require('buffer')
 const { toUSVString } = require('util')
-const { spawnSync } = require('child_process')
+const { Worker, MessageChannel, receiveMessageOnPort } = require('worker_threads')
 const { join } = require('path')
 
 const XMLHttpRequestReadyState = {
@@ -217,10 +217,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
       this[kState] = 'opened'
 
       // 2. Fire an event named readystatechange at this.
-      const event = new Event('readystatechange')
-      this.dispatchEvent(event)
-      // eslint-disable-next-line no-useless-call
-      this.onreadystatechange?.call(this, event)
+      fireEvent(this, 'readystatechange')
     }
   }
 
@@ -589,10 +586,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
         this[kState] = 'headers received'
 
         // 5. Fire an event named readystatechange at this.
-        const event = new Event('readystatechange')
-        this.dispatchEvent(event)
-        // eslint-disable-next-line no-useless-call
-        this.onreadystatechange?.call(this, event)
+        fireEvent(this, 'readystatechange')
 
         // 6. If this’s state is not headers received, then return.
         if (this[kState] !== 'headers received') {
@@ -633,10 +627,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
           }
 
           // 4. Fire an event named readystatechange at this.
-          const event = new Event('readystatechange')
-          this.dispatchEvent(event)
-          // eslint-disable-next-line no-useless-call
-          this.onreadystatechange?.call(this, event)
+          fireEvent(this, 'readystatechange')
 
           // 5. Fire a progress event named progress at this with this’s received
           //    bytes’s length and length.
@@ -658,7 +649,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
 
         // 13. Incrementally read this’s response’s body, given processBodyChunk,
         //     processEndOfBody, processBodyError, and this’s relevant global object.
-        ;(async () => {
+        (async () => {
           try {
             for await (const bytes of this[kResponse].body.stream) {
               processBodyChunk(bytes)
@@ -726,30 +717,11 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
 
       // 5. Pause until either processedResponse is true or this’s timeout
       //    is not 0 and this’s timeout milliseconds have passed since now.
-      // eslint-disable-next-line no-unmodified-loop-condition
-      
-      const reqString = JSON.stringify(req, (key, value) => {
-        if (key === 'headersList') {
-          return [...req.headersList.entries()]
-        }
-      
-        return value
-      })
-
-      const { stdout } = spawnSync(process.argv[0], [join(__dirname, 'sync.js'), reqString, this[kTimeout]])
-
-      const response = JSON.parse(stdout)
-      response.kResponse.headersList = new HeadersList(response.kResponse.headersList)
-      response.kResponse.urlList = response.kResponse.urlList.map(url => new URL(url))
-
-      this[kResponse] = response.kResponse
-      this[kReceivedBytes] = response.kReceivedBytes
 
       // 6. If processedResponse is false, then set this’s timed out flag and
       //    terminate this’s fetch controller.
 
       // 7. Run handle response end-of-body for this.
-      handleResponseEndOfBody(this)
     }
   }
 
@@ -898,6 +870,8 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
       throw new TypeError('illegal invocation')
     }
 
+    value = responseTypeEnum(value)
+
     // The responseType setter steps are:
 
     // 1. If the current global object is not a Window object and the
@@ -906,7 +880,11 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
     // 2. If this’s state is loading or done, then throw an
     //    "InvalidStateError" DOMException.
     if (this[kState] === 'done' || this[kState] === 'loading') {
-      throw new DOMException('invalid state', 'InvalidStateError')
+      // Note: WPTs expect the condition below to ONLY run when
+      // the value is correct (defaults to '').
+      if (value !== '') {
+        throw new DOMException('invalid state', 'InvalidStateError')
+      }
     }
 
     // 3. If the current global object is a Window object and this’s
@@ -1134,6 +1112,19 @@ function fireProgressEvent (e, target, transmitted, length) {
   target[`on${e}`]?.call(target, event)
 }
 
+function fireEvent (target, eventName) {
+  const event = new Event(eventName)
+  target.dispatchEvent(event)
+
+  try {
+    target.onreadystatechange?.call(target, event)
+  } catch (e) {
+    queueMicrotask(() => {
+      throw e
+    })
+  }
+}
+
 /**
  * @see https://xhr.spec.whatwg.org/#handle-errors
  * @param {XMLHttpRequest} xhr
@@ -1183,10 +1174,7 @@ function requestErrorSteps (xhr, event, exception) {
   }
 
   // 5. Fire an event named readystatechange at xhr.
-  const event2 = new Event('readystatechange')
-  xhr.dispatchEvent(event2)
-  // eslint-disable-next-line no-useless-call
-  xhr.onreadystatechange?.call(xhr, event2)
+  fireEvent(xhr, 'readystatechange')
 
   // 6. If xhr’s upload complete flag is unset, then:
   if (xhr[kUploadCompleteFlag] === undefined) {
@@ -1251,10 +1239,7 @@ function handleResponseEndOfBody (xhr) {
   xhr[kSendFlag] = undefined
 
   // 10. Fire an event named readystatechange at xhr.
-  const event = new Event('readystatechange')
-  xhr.dispatchEvent(event)
-  // eslint-disable-next-line no-useless-call
-  xhr.onreadystatechange?.call(xhr, event)
+  fireEvent(xhr, 'readystatechange')
 
   // 11. Fire a progress event named load at xhr with transmitted and length.
   fireProgressEvent('load', xhr, transmitted, length)
@@ -1262,6 +1247,21 @@ function handleResponseEndOfBody (xhr) {
   // 12. Fire a progress event named loadend at xhr with transmitted and length.
   fireProgressEvent('loadend', xhr, transmitted, length)
 }
+
+webidl.enumConverter = function (allowed, def) {
+  return (V) => {
+    if (typeof V !== 'string' || !allowed.includes(V)) {
+      return def
+    }
+
+    return V
+  }
+}
+
+const responseTypeEnum = webidl.enumConverter(
+  ['', 'arraybuffer', 'blob', 'document', 'json', 'text'],
+  ''
+)
 
 module.exports = {
   XMLHttpRequest
