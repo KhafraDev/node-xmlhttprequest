@@ -1,6 +1,4 @@
-'use strict'
-
-const {
+import {
   kUploadObject,
   kTimeout,
   kResponseType,
@@ -23,32 +21,30 @@ const {
   kLengthComputable,
   kLoaded,
   kTotal
-} = require('./symbols')
-const {
+} from './symbols.js'
+import {
   isValidHeaderValue,
   serializeMimeType,
   extractLengthFromHeadersList,
   getTextResponse,
   finalMimeType
-} = require('./util')
-const {
-  isValidHTTPToken,
-  normalizeMethod
-} = require('undici/lib/fetch/util')
-const { forbiddenMethods, DOMException } = require('undici/lib/fetch/constants')
-const { safelyExtractBody } = require('undici/lib/fetch/body')
-const { Fetch, finalizeAndReportTiming, fetching } = require('undici/lib/fetch/index')
-const { HeadersList } = require('undici/lib/fetch/headers')
-const { makeNetworkError } = require('undici/lib/fetch/response')
-const { parseMIMEType } = require('undici/lib/fetch/dataURL')
-const { makeRequest } = require('undici/lib/fetch/request')
-const { webidl } = require('undici/lib/fetch/webidl')
-const { getGlobalDispatcher, getGlobalOrigin } = require('undici')
-const assert = require('assert')
-const { Blob } = require('buffer')
-const { toUSVString } = require('util')
-const { Worker, MessageChannel, receiveMessageOnPort } = require('worker_threads')
-const { join } = require('path')
+} from './util.js'
+import { isValidHTTPToken, normalizeMethod } from 'undici/lib/fetch/util.js'
+import { forbiddenMethods, DOMException } from 'undici/lib/fetch/constants.js'
+import { safelyExtractBody } from 'undici/lib/fetch/body.js'
+import { Fetch, finalizeAndReportTiming, fetching } from 'undici/lib/fetch/index.js'
+import { HeadersList } from 'undici/lib/fetch/headers.js'
+import { makeNetworkError, makeResponse } from 'undici/lib/fetch/response.js'
+import { parseMIMEType } from 'undici/lib/fetch/dataURL.js'
+import { makeRequest } from 'undici/lib/fetch/request.js'
+import { webidl } from 'undici/lib/fetch/webidl.js'
+import { getGlobalDispatcher, getGlobalOrigin } from 'undici'
+import assert from 'assert'
+import { Blob } from 'buffer'
+import { toUSVString } from 'util'
+import { Worker, MessageChannel, receiveMessageOnPort } from 'worker_threads';
+import { fileURLToPath } from 'url'
+import { join } from 'path'
 
 const XMLHttpRequestReadyState = {
   UNSENT: 0,
@@ -84,7 +80,7 @@ class ProgressEvent extends Event {
   }
 }
 
-class XMLHttpRequest extends XMLHttpRequestUpload {
+export class XMLHttpRequest extends XMLHttpRequestUpload {
   // https://xhr.spec.whatwg.org/#constructors
   constructor () {
     super()
@@ -722,6 +718,44 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
       //    terminate this’s fetch controller.
 
       // 7. Run handle response end-of-body for this.
+
+      const shared = new SharedArrayBuffer(4)
+      const { port1: localPort, port2: workerPort } = new MessageChannel()
+
+      const path = fileURLToPath(join(import.meta.url, '../worker.mjs'))
+
+      const w = new Worker(path, {
+        workerData: {
+          shared,
+          port: workerPort,
+          request: {
+            body: req.body,
+            url: req.url.toString(),
+            method: req.method,
+            headers: [...req.headersList.entries()],
+            mode: req.mode,
+            credentials: req.credentials
+          }
+        },
+        transferList: [workerPort]
+      })
+
+      const int32 = new Int32Array(shared)
+      Atomics.wait(int32, 0, 0)
+
+      const message = receiveMessageOnPort(localPort)
+      const { body, status, statusText, headers, type, url } = message.message ?? message
+      
+      this[kResponse] = makeResponse({
+        status,
+        statusText,
+        type,
+        urlList: [new URL(url)],
+        headersList: headers
+      })
+      this[kReceivedBytes] = body.buffer
+
+      w.terminate()
     }
   }
 
@@ -1262,7 +1296,3 @@ const responseTypeEnum = webidl.enumConverter(
   ['', 'arraybuffer', 'blob', 'document', 'json', 'text'],
   ''
 )
-
-module.exports = {
-  XMLHttpRequest
-}

@@ -1,13 +1,6 @@
-'use strict'
-
-const {
-  kResponse,
-  kOverrideMimeType,
-  kResponseType,
-  kReceivedBytes
-} = require('./symbols')
-const { parseMIMEType } = require('undici/lib/fetch/dataURL')
-const { getEncoding } = require('./encoding')
+import { kResponse, kOverrideMimeType, kResponseType, kReceivedBytes } from './symbols.js'
+import { parseMIMEType } from 'undici/lib/fetch/dataURL.js'
+import { getEncoding } from './encoding.js'
 
 /**
  * @typedef {import('./index').XMLHttpRequest} XMLHttpRequest
@@ -18,7 +11,7 @@ const { getEncoding } = require('./encoding')
  * @see https://fetch.spec.whatwg.org/#header-value
  * @param {string} value
  */
-function isValidHeaderValue (value) {
+export function isValidHeaderValue (value) {
   // see: https://chromium.googlesource.com/chromium/src/+/7d15b7fc471b33e2d52a45876cb8323a4fb0e780/third_party/WebKit/Source/platform/network/HTTPParsers.cpp#224
   return (
     containsOnlyLatin1(value) &&
@@ -45,7 +38,7 @@ function containsOnlyLatin1 (string) {
 /**
  * @see https://mimesniff.spec.whatwg.org/#serialize-a-mime-type
  */
-function serializeMimeType (mimeType) {
+export function serializeMimeType (mimeType) {
   // 1. Let serialization be the concatenation of mimeType’s type,
   //    U+002F (/), and mimeType’s subtype.
   let serialization = `${mimeType.type}/${mimeType.subtype}`
@@ -84,7 +77,7 @@ function serializeMimeType (mimeType) {
 /**
  * @see https://fetch.spec.whatwg.org/#header-list-extract-a-length
  */
-function extractLengthFromHeadersList (headers) {
+export function extractLengthFromHeadersList (headers) {
   const header = headers.get('content-length')
 
   if (header === null) {
@@ -125,7 +118,7 @@ function extractLengthFromHeadersList (headers) {
  * @see https://xhr.spec.whatwg.org/#text-response
  * @param {XMLHttpRequest} xhr
  */
-function getTextResponse (xhr) {
+export function getTextResponse (xhr) {
   // 1. If xhr’s response’s body is null, then return the empty string.
   if (xhr[kResponse].body === null) {
     return ''
@@ -302,7 +295,7 @@ function extractMimeType (headers) {
  * @see https://xhr.spec.whatwg.org/#final-mime-type
  * @param {XMLHttpRequest} xhr
  */
-function finalMimeType (xhr) {
+export function finalMimeType (xhr) {
   // 1. If xhr’s override MIME type is null, return the result of
   //    get a response MIME type for xhr.
   if (xhr[kOverrideMimeType] === null) {
@@ -311,12 +304,4 @@ function finalMimeType (xhr) {
 
   // 2. Return xhr’s override MIME type.
   return xhr[kOverrideMimeType]
-}
-
-module.exports = {
-  isValidHeaderValue,
-  serializeMimeType,
-  extractLengthFromHeadersList,
-  getTextResponse,
-  finalMimeType
 }
