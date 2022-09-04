@@ -735,7 +735,8 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
             headers: [...req.headersList.entries()],
             mode: req.mode,
             credentials: req.credentials
-          }
+          },
+          timeout: this[kTimeout]
         },
         transferList: [workerPort]
       })
@@ -743,19 +744,26 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
       const int32 = new Int32Array(shared)
       Atomics.wait(int32, 0, 0)
 
-      const message = receiveMessageOnPort(localPort)
-      const { body, status, statusText, headers, type, url } = message.message ?? message
+      const { message } = receiveMessageOnPort(localPort)
+
+      if (!('error' in message)) {
+        const { body, status, statusText, headers, type, url } = message
       
-      this[kResponse] = makeResponse({
-        status,
-        statusText,
-        type,
-        urlList: [new URL(url)],
-        headersList: headers
-      })
-      this[kReceivedBytes] = body.buffer
+        this[kResponse] = makeResponse({
+          status,
+          statusText,
+          type,
+          urlList: [new URL(url)],
+          headersList: headers
+        })
+        this[kReceivedBytes] = body.buffer
+      } else {
+        this[kResponse] = makeNetworkError(message.error)
+      }
 
       w.terminate()
+
+      handleResponseEndOfBody(this)
     }
   }
 
