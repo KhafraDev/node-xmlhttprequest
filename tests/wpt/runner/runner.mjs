@@ -29,18 +29,18 @@ export class WPTRunner {
     const files = new Set();
 
     while (ini.size !== 0) {
-        for (const d of ini) {
-            const path = resolve(dir, d)
-            ini.delete(d); // remove from set
-            const stats = statSync(path)
+      for (const d of ini) {
+        const path = resolve(dir, d)
+        ini.delete(d); // remove from set
+        const stats = statSync(path)
 
-            if (stats.isDirectory()) {
-                for (const f of readdirSync(path))
-                    ini.add(resolve(path, f))
-            } else if (stats.isFile() && fn(d)) {
-                files.add(path)
-            }
+        if (stats.isDirectory()) {
+          for (const f of readdirSync(path))
+            ini.add(resolve(path, f))
+        } else if (stats.isFile() && fn(d)) {
+          files.add(path)
         }
+      }
     }
 
     return [...files]

@@ -59,6 +59,9 @@ for (const initScript of initScripts) {
 }
 
 for (const path of paths) {
-  const code = readFileSync(path)
-  runInThisContext(code, { filename: path })
+  const code = readFileSync(path, 'utf-8')
+  runInThisContext(
+    `;(() => {${code}})();`,
+    { filename: path 
+  })
 }
