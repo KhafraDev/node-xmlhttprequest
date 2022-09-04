@@ -9,11 +9,11 @@ const workerPath = fileURLToPath(join(import.meta.url, '../../server/server.mjs'
 const worker = new Worker(workerPath)
 
 while (true) {
-	const response = await request('http://localhost:3000').catch(() => null)
+  const response = await request('http://localhost:3000').catch(() => null)
 
-	if (response !== null) {
-		break
-	}
+  if (response !== null) {
+    break
+  }
 }
 
 export const url = 'http://localhost:3000'

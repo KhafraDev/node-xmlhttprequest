@@ -308,10 +308,24 @@ function finalMimeType (xhr) {
   return xhr[kOverrideMimeType]
 }
 
+// https://encoding.spec.whatwg.org/#utf-8-decode
+function utf8Decode (buffer) {
+  if (buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+    buffer = buffer.subarray(3)
+  }
+
+  const text = new TextDecoder('utf-8', {
+    fatal: true
+  }).decode(buffer)
+
+  return JSON.parse(text)
+}
+
 module.exports = {
   finalMimeType,
   getTextResponse,
   extractLengthFromHeadersList,
   serializeMimeType,
-  isValidHeaderValue
+  isValidHeaderValue,
+  utf8Decode
 }

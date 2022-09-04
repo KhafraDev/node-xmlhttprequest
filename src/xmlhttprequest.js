@@ -29,7 +29,8 @@ const {
   serializeMimeType,
   extractLengthFromHeadersList,
   getTextResponse,
-  finalMimeType
+  finalMimeType,
+  utf8Decode
 } = require('./util.js')
 const { isValidHTTPToken, normalizeMethod } = require('undici/lib/fetch/util.js')
 const { forbiddenMethods, DOMException } = require('undici/lib/fetch/constants.js')
@@ -1024,13 +1025,9 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
       // 3. Let jsonObject be the result of running parse JSON from
       //    bytes on this’s received bytes. If that threw an exception,
       //    then return null.
-      let jsonObject = ''
+      let jsonObject
       try {
-        for (const byte of this[kReceivedBytes]) {
-          jsonObject += String.fromCodePoint(byte)
-        }
-
-        jsonObject = JSON.parse(jsonObject)
+        jsonObject = utf8Decode(new Uint8Array(this[kReceivedBytes]))
       } catch {
         return null
       }
@@ -1162,8 +1159,15 @@ function fireProgressEvent (e, target, transmitted, length) {
   event[kTotal] = length
 
   target.dispatchEvent(event)
-  // eslint-disable-next-line no-useless-call
-  target[`on${eventName}`]?.call(target, event)
+
+  try {
+    // eslint-disable-next-line no-useless-call
+    target[`on${eventName}`]?.call(target, event)
+  } catch (e) {
+    queueMicrotask(() => {
+      throw e
+    })
+  }
 }
 
 function fireEvent (target, eventName) {
