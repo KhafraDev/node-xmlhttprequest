@@ -1,4 +1,6 @@
-import {
+'use strict'
+
+const {
   kUploadObject,
   kTimeout,
   kResponseType,
@@ -21,30 +23,29 @@ import {
   kLengthComputable,
   kLoaded,
   kTotal
-} from './symbols.js'
-import {
+} = require('./symbols.js')
+const {
   isValidHeaderValue,
   serializeMimeType,
   extractLengthFromHeadersList,
   getTextResponse,
   finalMimeType
-} from './util.js'
-import { isValidHTTPToken, normalizeMethod } from 'undici/lib/fetch/util.js'
-import { forbiddenMethods, DOMException } from 'undici/lib/fetch/constants.js'
-import { safelyExtractBody } from 'undici/lib/fetch/body.js'
-import { Fetch, finalizeAndReportTiming, fetching } from 'undici/lib/fetch/index.js'
-import { HeadersList } from 'undici/lib/fetch/headers.js'
-import { makeNetworkError, makeResponse } from 'undici/lib/fetch/response.js'
-import { parseMIMEType } from 'undici/lib/fetch/dataURL.js'
-import { makeRequest } from 'undici/lib/fetch/request.js'
-import { webidl } from 'undici/lib/fetch/webidl.js'
-import { getGlobalDispatcher, getGlobalOrigin } from 'undici'
-import assert from 'assert'
-import { Blob } from 'buffer'
-import { toUSVString } from 'util'
-import { Worker, MessageChannel, receiveMessageOnPort } from 'worker_threads';
-import { fileURLToPath } from 'url'
-import { join } from 'path'
+} = require('./util.js')
+const { isValidHTTPToken, normalizeMethod } = require('undici/lib/fetch/util.js')
+const { forbiddenMethods, DOMException } = require('undici/lib/fetch/constants.js')
+const { safelyExtractBody } = require('undici/lib/fetch/body.js')
+const { Fetch, finalizeAndReportTiming, fetching } = require('undici/lib/fetch/index.js')
+const { HeadersList } = require('undici/lib/fetch/headers.js')
+const { makeNetworkError, makeResponse } = require('undici/lib/fetch/response.js')
+const { parseMIMEType } = require('undici/lib/fetch/dataURL.js')
+const { makeRequest } = require('undici/lib/fetch/request.js')
+const { webidl } = require('undici/lib/fetch/webidl.js')
+const { getGlobalDispatcher, getGlobalOrigin } = require('undici')
+const assert = require('assert')
+const { Blob } = require('buffer')
+const { toUSVString } = require('util')
+const { Worker, MessageChannel, receiveMessageOnPort } = require('worker_threads');
+const { join } = require('path')
 
 const XMLHttpRequestReadyState = {
   UNSENT: 0,
@@ -80,7 +81,7 @@ class ProgressEvent extends Event {
   }
 }
 
-export class XMLHttpRequest extends XMLHttpRequestUpload {
+class XMLHttpRequest extends XMLHttpRequestUpload {
   // https://xhr.spec.whatwg.org/#constructors
   constructor () {
     super()
@@ -601,7 +602,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
         let length = extractLengthFromHeadersList(this[kResponse].headersList)
 
         // 9. If length is not an integer, then set it to 0.
-        if (!Number.isSafeInteger(length)) {
+        if (length === 'failure' || !Number.isSafeInteger(length)) {
           length = 0
         }
 
@@ -722,7 +723,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
       const shared = new SharedArrayBuffer(4)
       const { port1: localPort, port2: workerPort } = new MessageChannel()
 
-      const path = fileURLToPath(join(import.meta.url, '../worker.mjs'))
+      const path = join(__dirname, 'worker.mjs')
 
       const w = new Worker(path, {
         workerData: {
@@ -1144,7 +1145,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
 
 /**
  * @see https://xhr.spec.whatwg.org/#concept-event-fire-progress
- * @param {string} e
+ * @param {string|Event} e
  * @param {EventTarget} target
  * @param {number} transmitted
  * @param {number} length
@@ -1315,3 +1316,7 @@ const responseTypeEnum = webidl.enumConverter(
   ['', 'arraybuffer', 'blob', 'document', 'json', 'text'],
   ''
 )
+
+module.exports = {
+  XMLHttpRequest
+}

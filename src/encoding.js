@@ -1,8 +1,10 @@
+'use strict'
+
 /**
  * @see https://encoding.spec.whatwg.org/#concept-encoding-get
  * @param {string} label
  */
-export function getEncoding (label) {
+function getEncoding (label) {
   // 1. Remove any leading and trailing ASCII whitespace from label.
   // 2. If label is an ASCII case-insensitive match for any of the
   //    labels listed in the table below, then return the
@@ -277,4 +279,8 @@ export function getEncoding (label) {
       return 'x-user-defined'
     default: return 'failure'
   }
+}
+
+module.exports = {
+  getEncoding
 }
