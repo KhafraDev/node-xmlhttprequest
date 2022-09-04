@@ -42,7 +42,7 @@ import { getGlobalDispatcher, getGlobalOrigin } from 'undici'
 import assert from 'assert'
 import { Blob } from 'buffer'
 import { toUSVString } from 'util'
-import { Worker, MessageChannel, receiveMessageOnPort, isMainThread } from 'worker_threads';
+import { Worker, MessageChannel, receiveMessageOnPort } from 'worker_threads';
 import { fileURLToPath } from 'url'
 import { join } from 'path'
 
@@ -681,7 +681,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
 
       let timeout = null
       const interval = setInterval(() => {
-        if (req.done || (this[kTimeout] !== 0 && Date.now() - now <= this[kTimeout])) {
+        if (req.done || (this[kTimeout] !== 0 && Date.now() - now < this[kTimeout])) {
           clearInterval(interval)
           clearTimeout(timeout)
         }
@@ -691,7 +691,7 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
         timeout = setTimeout(() => {
           if (!req.done) {
             this[kTimedOutFlag] = true
-            this[kFetchController].terminate('terminated')
+            this[kFetchController].abort()
 
             clearInterval(interval)
           }
