@@ -1150,18 +1150,19 @@ export class XMLHttpRequest extends XMLHttpRequestUpload {
  * @param {number} length
  */
 function fireProgressEvent (e, target, transmitted, length) {
+  const eventName = typeof e === 'string' ? e : e.type
   // To fire a progress event named e at target, given transmitted and length, means to
   // fire an event named e at target, using ProgressEvent, with the loaded attribute
   // initialized to transmitted, and if length is not 0, with the lengthComputable
   // attribute initialized to true and the total attribute initialized to length.
-  const event = new ProgressEvent(e)
+  const event = new ProgressEvent(eventName)
   event[kLoaded] = transmitted
   event[kLengthComputable] = length !== 0
   event[kTotal] = length
 
   target.dispatchEvent(event)
   // eslint-disable-next-line no-useless-call
-  target[`on${e}`]?.call(target, event)
+  target[`on${eventName}`]?.call(target, event)
 }
 
 function fireEvent (target, eventName) {
