@@ -8,6 +8,13 @@ const resources = fileURLToPath(join(import.meta.url, '../../wpt/resources'))
 
 const server = createServer((req, res) => {
   switch (req.url) {
+    case '/resources/utf16-bom.json': {
+      res.setHeader('Content-Type', 'application/json')
+      createReadStream(join(resources, 'utf16-bom.json')).pipe(res)
+      res.end()
+
+      break
+    }
     case '/resources/echo-content-type.py': {
       // https://github.com/web-platform-tests/wpt/blob/master/xhr/resources/echo-content-type.py
       res.setHeader('Content-Type', 'text/plain')
