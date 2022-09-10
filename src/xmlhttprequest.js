@@ -45,7 +45,7 @@ const { getGlobalDispatcher, getGlobalOrigin } = require('undici')
 const assert = require('assert')
 const { Blob } = require('buffer')
 const { toUSVString } = require('util')
-const { Worker, MessageChannel, receiveMessageOnPort } = require('worker_threads');
+const { Worker, MessageChannel, receiveMessageOnPort } = require('worker_threads')
 const { join } = require('path')
 
 const XMLHttpRequestReadyState = {
@@ -750,7 +750,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
 
       if (!('error' in message)) {
         const { body, status, statusText, headers, type, url } = message
-      
+
         this[kResponse] = makeResponse({
           status,
           statusText,
@@ -1175,6 +1175,7 @@ function fireEvent (target, eventName) {
   target.dispatchEvent(event)
 
   try {
+    // eslint-disable-next-line no-useless-call
     target.onreadystatechange?.call(target, event)
   } catch (e) {
     queueMicrotask(() => {

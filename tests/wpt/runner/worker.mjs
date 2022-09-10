@@ -28,6 +28,7 @@ await import('../resources/testharness.cjs')
 
 // add_*_callback comes from testharness
 // stolen from node's wpt test runner
+// eslint-disable-next-line no-undef
 add_result_callback((result) => {
   parentPort.postMessage({
     type: 'result',
@@ -35,11 +36,12 @@ add_result_callback((result) => {
       status: result.status,
       name: result.name,
       message: result.message,
-      stack: result.stack,
+      stack: result.stack
     }
   })
 })
 
+// eslint-disable-next-line no-undef
 add_completion_callback((_, status) => {
   parentPort.postMessage({
     type: 'completion',

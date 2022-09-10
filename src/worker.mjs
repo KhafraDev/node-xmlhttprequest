@@ -1,6 +1,6 @@
-import { workerData } from 'worker_threads';
+import { workerData } from 'worker_threads'
 
-const { shared, port, request, timeout } = workerData;
+const { shared, port, request, timeout } = workerData
 
 const ac = timeout !== 0 ? new AbortController() : undefined
 let timeoutId

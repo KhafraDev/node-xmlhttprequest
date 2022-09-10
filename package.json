@@ -4,7 +4,9 @@
   "description": "A spec-compliant version of XMLHttpRequest",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/wpt/run.mjs",
+    "lint": "standard | snazzy",
+    "lint:fix": "standard --fix | snazzy"
   },
   "keywords": [
     "XMLHttpRequest"
@@ -13,5 +15,15 @@
   "license": "MIT",
   "dependencies": {
     "undici": "github:nodejs/undici"
+  },
+  "devDependencies": {
+    "snazzy": "^9.0.0",
+    "standard": "^17.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "tests/wpt/resources/",
+      "tests/wpt/xhr/"
+    ]
   }
 }

@@ -52,6 +52,5 @@ send({ server: `http://localhost:${server.address().port}` })
 process.on('message', (message) => {
   if (message === 'shutdown') {
     server.close((err) => err ? send(err) : send({ message: 'shutdown' }))
-    return
   }
 })

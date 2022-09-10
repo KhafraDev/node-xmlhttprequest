@@ -7,9 +7,9 @@ import { EventEmitter } from 'node:events'
 const testPath = fileURLToPath(join(import.meta.url, '../..'))
 
 export class WPTRunner extends EventEmitter {
-	/** @type {string} */
-	#folderPath
-  
+  /** @type {string} */
+  #folderPath
+
   /** @type {string[]} */
   #files = []
 
@@ -19,27 +19,28 @@ export class WPTRunner extends EventEmitter {
   /** @type {string} */
   #url
 
-	constructor (folder, url) {
+  constructor (folder, url) {
     super()
 
-		this.#folderPath = join(testPath, folder)
+    this.#folderPath = join(testPath, folder)
     this.#files.push(...WPTRunner.walk(this.#folderPath, () => true))
     this.#url = url
-	}
+  }
 
-	static walk (dir, fn) {
-    const ini = new Set(readdirSync(dir));
-    const files = new Set();
+  static walk (dir, fn) {
+    const ini = new Set(readdirSync(dir))
+    const files = new Set()
 
     while (ini.size !== 0) {
       for (const d of ini) {
         const path = resolve(dir, d)
-        ini.delete(d); // remove from set
+        ini.delete(d) // remove from set
         const stats = statSync(path)
 
         if (stats.isDirectory()) {
-          for (const f of readdirSync(path))
+          for (const f of readdirSync(path)) {
             ini.add(resolve(path, f))
+          }
         } else if (stats.isFile() && fn(d)) {
           files.add(path)
         }
