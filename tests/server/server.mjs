@@ -8,7 +8,9 @@ import process from 'node:process'
 const resources = fileURLToPath(join(import.meta.url, '../../wpt/resources'))
 
 const server = createServer((req, res) => {
-  switch (req.url) {
+  const fullUrl = new URL(req.url, `http://localhost:${server.address().port}`)
+
+  switch (fullUrl.pathname) {
     case '/resources/well-formed.xml': {
       res.setHeader('Content-Type', 'application/xml')
       createReadStream(join(resources, 'well-formed.xml')).pipe(res)
