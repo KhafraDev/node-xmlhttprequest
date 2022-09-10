@@ -4,13 +4,36 @@ import { createReadStream } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import process from 'node:process'
+import { setTimeout as sleep } from 'node:timers/promises'
 
 const resources = fileURLToPath(join(import.meta.url, '../../wpt/resources'))
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
   const fullUrl = new URL(req.url, `http://localhost:${server.address().port}`)
 
   switch (fullUrl.pathname) {
+    case '/resources/trickle.py': {
+      const chunk = 'TEST_TRICKLE\n'
+      const delay = (parseFloat(fullUrl.searchParams.get('ms')) ?? 500) / 1e3
+      const count = parseInt(fullUrl.searchParams.get('count')) ?? 50
+
+      if (fullUrl.searchParams.has('specifylength')) {
+        res.setHeader('Content-Length', (count * chunk.length).toString())
+      }
+
+      await sleep(delay)
+      res.setHeader('Content-Type', 'text/plain')
+      await sleep(delay)
+
+      for (let i = 0; i < count; i++) {
+        res.write(chunk)
+        await sleep(delay)
+      }
+
+      res.end()
+
+      break
+    }
     case '/resources/well-formed.xml': {
       res.setHeader('Content-Type', 'application/xml')
       createReadStream(join(resources, 'well-formed.xml')).pipe(res)
