@@ -649,9 +649,20 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
         //     processEndOfBody, processBodyError, and this’s relevant global object.
         (async () => {
           try {
-            for await (const bytes of this[kResponse].body.stream) {
-              processBodyChunk(bytes)
+            /** @type {import('stream/web').ReadableStream<Uint8Array>} */
+            const stream = this[kResponse].body.stream
+            const reader = stream.getReader()
+
+            while (true) {
+              const { done, value } = await reader.read()
+
+              if (done) {
+                break
+              }
+
+              processBodyChunk(value)
             }
+
             processEndOfBody()
           } catch (err) {
             processBodyError(err)

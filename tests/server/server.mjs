@@ -12,7 +12,16 @@ const server = createServer(async (req, res) => {
   const fullUrl = new URL(req.url, `http://localhost:${server.address().port}`)
 
   switch (fullUrl.pathname) {
+    case '/resources/over-1-meg.txt': {
+      res.setHeader('Content-Type', 'text/plain')
+      createReadStream(join(resources, 'over-1-meg.txt'))
+        .pipe(res)
+        .on('close', () => res.end())
+
+      break
+    }
     case '/resources/trickle.py': {
+      // https://github.com/web-platform-tests/wpt/blob/master/xhr/resources/trickle.py
       const chunk = 'TEST_TRICKLE\n'
       const delay = (parseFloat(fullUrl.searchParams.get('ms')) ?? 500) / 1e3
       const count = parseInt(fullUrl.searchParams.get('count')) ?? 50
@@ -36,15 +45,17 @@ const server = createServer(async (req, res) => {
     }
     case '/resources/well-formed.xml': {
       res.setHeader('Content-Type', 'application/xml')
-      createReadStream(join(resources, 'well-formed.xml')).pipe(res)
-      res.end()
+      createReadStream(join(resources, 'well-formed.xml'))
+        .pipe(res)
+        .on('close', () => res.end())
 
       break
     }
     case '/resources/utf16-bom.json': {
       res.setHeader('Content-Type', 'application/json')
-      createReadStream(join(resources, 'utf16-bom.json')).pipe(res)
-      res.end()
+      createReadStream(join(resources, 'utf16-bom.json'))
+        .pipe(res)
+        .on('close', () => res.end())
 
       break
     }
