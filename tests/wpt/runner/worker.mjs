@@ -1,5 +1,5 @@
 import { workerData, parentPort } from 'node:worker_threads'
-import { runInThisContext } from 'node:vm'
+import { runInThisContext, runInContext, createContext } from 'node:vm'
 import { readFileSync } from 'node:fs'
 import { setGlobalOrigin, FormData } from 'undici'
 import { XMLHttpRequest } from '../../../index.js'
@@ -55,15 +55,11 @@ for (const initScript of initScripts) {
   runInThisContext(initScript)
 }
 
+const global = { ...globalThis }
+
 for (const path of paths) {
   const code = readFileSync(path, 'utf-8')
-  // Some files with create global variables.
-  // In the future, tests should likely run in
-  // a new context -- the decision to run in the
-  // same context was based on Node.js' WPT test
-  // runner.
-  runInThisContext(
-    `;(() => {${code}})();`,
-    { filename: path }
-  )
+  const context = createContext({ ...global })
+
+  runInContext(code, context, { filename: path })
 }
