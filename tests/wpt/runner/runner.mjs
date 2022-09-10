@@ -2,10 +2,11 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { readdirSync, statSync } from 'node:fs'
+import { EventEmitter } from 'node:events'
 
 const testPath = fileURLToPath(join(import.meta.url, '../..'))
 
-export class WPTRunner {
+export class WPTRunner extends EventEmitter {
 	/** @type {string} */
 	#folderPath
   
@@ -19,6 +20,8 @@ export class WPTRunner {
   #url
 
 	constructor (folder, url) {
+    super()
+
 		this.#folderPath = join(testPath, folder)
     this.#files.push(...WPTRunner.walk(this.#folderPath, () => true))
     this.#url = url
@@ -60,6 +63,8 @@ export class WPTRunner {
     worker.on('message', (message) => {
       if (message.result?.status === 1) {
         console.log({ message })
+      } else if (message.type === 'completion') {
+        this.emit('completion')
       }
     })
   }

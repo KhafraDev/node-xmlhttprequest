@@ -3,6 +3,7 @@ import { once } from 'node:events'
 import { createReadStream } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
+import process from 'node:process'
 
 const resources = fileURLToPath(join(import.meta.url, '../../wpt/resources'))
 
@@ -36,6 +37,21 @@ const server = createServer((req, res) => {
       res.end('body')
     }
   }
-}).listen(3000)
+}).listen(0)
 
 await once(server, 'listening')
+
+const send = (message) => {
+  if (typeof process.send === 'function') {
+    process.send(message)
+  }
+}
+
+send({ server: `http://localhost:${server.address().port}` })
+
+process.on('message', (message) => {
+  if (message === 'shutdown') {
+    server.close((err) => err ? send(err) : send({ message: 'shutdown' }))
+    return
+  }
+})

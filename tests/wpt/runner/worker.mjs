@@ -1,19 +1,14 @@
-import { workerData, parentPort, isMainThread } from 'node:worker_threads'
+import { workerData, parentPort } from 'node:worker_threads'
 import { runInThisContext } from 'node:vm'
 import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { setGlobalOrigin } from 'undici'
+import { setGlobalOrigin, FormData } from 'undici'
 import { XMLHttpRequest } from '../../../index.js'
 
 const { initScripts, paths, url } = workerData
 
-if (typeof require === 'undefined') {
-  globalThis.require = createRequire(import.meta.url) 
-}
-
 globalThis.XMLHttpRequest = XMLHttpRequest
 globalThis.XMLHttpRequestUpload = (new XMLHttpRequest()).upload
-globalThis.FormData ??= require('undici').FormData
+globalThis.FormData ??= FormData
 
 // self is required by testharness
 // GLOBAL is required by self
@@ -29,7 +24,7 @@ runInThisContext(`
   }
 `)
 
-require('../resources/testharness.cjs')
+await import('../resources/testharness.cjs')
 
 // add_*_callback comes from testharness
 // stolen from node's wpt test runner
@@ -60,8 +55,13 @@ for (const initScript of initScripts) {
 
 for (const path of paths) {
   const code = readFileSync(path, 'utf-8')
+  // Some files with create global variables.
+  // In the future, tests should likely run in
+  // a new context -- the decision to run in the
+  // same context was based on Node.js' WPT test
+  // runner.
   runInThisContext(
     `;(() => {${code}})();`,
-    { filename: path 
-  })
+    { filename: path }
+  )
 }

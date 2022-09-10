@@ -1,25 +1,27 @@
 import { WPTRunner } from './runner/runner.mjs'
-import { Worker } from 'worker_threads'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
-import { request } from 'undici'
+import { fork } from 'child_process'
+import { on } from 'events'
 
-const workerPath = fileURLToPath(join(import.meta.url, '../../server/server.mjs'))
+const serverPath = fileURLToPath(join(import.meta.url, '../../server/server.mjs'))
 
-const worker = new Worker(workerPath)
+const child = fork(serverPath, [], {
+  stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+})
 
-while (true) {
-  const response = await request('http://localhost:3000').catch(() => null)
+/** @type {WPTRunner} */
+let runner
 
-  if (response !== null) {
-    break
+for await (const [message] of on(child, 'message')) {
+  if (message.server) {
+    runner = new WPTRunner('xhr', message.server)
+    runner.run()
+
+    runner.once('completion', () => {
+      child.send('shutdown')
+    })
+  } else if (message.message === 'shutdown') {
+    process.exit()
   }
 }
-
-export const url = 'http://localhost:3000'
-
-const runner = new WPTRunner('xhr', url)
-
-runner.run()
-
-await worker.terminate()
