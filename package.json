@@ -13,9 +13,6 @@
   ],
   "author": "KhafraDev",
   "license": "MIT",
-  "dependencies": {
-    "undici": "github:nodejs/undici"
-  },
   "devDependencies": {
     "snazzy": "^9.0.0",
     "standard": "^17.0.0"
@@ -25,5 +22,8 @@
       "tests/wpt/resources/",
       "tests/wpt/xhr/"
     ]
+  },
+  "dependencies": {
+    "undici": "^6.6.2"
   }
 }

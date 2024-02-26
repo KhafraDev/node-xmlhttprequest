@@ -33,7 +33,7 @@ const {
   utf8Decode
 } = require('./util.js')
 const { isValidHTTPToken, normalizeMethod } = require('undici/lib/fetch/util.js')
-const { forbiddenMethods, DOMException } = require('undici/lib/fetch/constants.js')
+const { forbiddenMethods } = require('undici/lib/fetch/constants.js')
 const { safelyExtractBody } = require('undici/lib/fetch/body.js')
 const { Fetch, finalizeAndReportTiming, fetching } = require('undici/lib/fetch/index.js')
 const { HeadersList } = require('undici/lib/fetch/headers.js')
@@ -745,7 +745,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
             body: req.body,
             url: req.url.toString(),
             method: req.method,
-            headers: [...req.headersList.entries()],
+            headers: req.headersList.entries,
             mode: req.mode,
             credentials: req.credentials
           },
@@ -862,7 +862,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
 
     // The getResponseHeader(name) method steps are to return the result of
     // getting name from this’s response’s header list.
-    return this[kRequestHeaders].get(toUSVString(name))
+    return this[kResponse].headersList.get(toUSVString(name))
   }
 
   // https://xhr.spec.whatwg.org/#the-getallresponseheaders()-method
@@ -880,12 +880,13 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
     // 3. Let headers be the result of sorting initialHeaders in
     //    ascending order, with a being less than b if a’s name
     //    is legacy-uppercased-byte less than b’s name.
-    // TODO
+    const headers = Object.entries(this[kResponse].headersList.entries)
+      .sort((a, b) => a[0].toUpperCase().localeCompare(b[0].toUpperCase()))
 
     // 4. For each header in headers, append header’s name, followed
     //    by a 0x3A 0x20 byte pair, followed by header’s value,
     //    followed by a 0x0D 0x0A byte pair, to output.
-    for (const [name, value] of this[kRequestHeaders]) {
+    for (const [name, value] of headers) {
       output += `${name}: ${value}\r\n`
     }
 

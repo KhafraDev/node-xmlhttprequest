@@ -1,14 +1,13 @@
 import { workerData, parentPort } from 'node:worker_threads'
 import { runInThisContext, runInContext, createContext } from 'node:vm'
 import { readFileSync } from 'node:fs'
-import { setGlobalOrigin, FormData } from 'undici'
+import { setGlobalOrigin } from 'undici'
 import { XMLHttpRequest } from '../../../index.js'
 
 const { initScripts, paths, url } = workerData
 
 globalThis.XMLHttpRequest = XMLHttpRequest
-globalThis.XMLHttpRequestUpload = (new XMLHttpRequest()).upload
-globalThis.FormData ??= FormData
+globalThis.XMLHttpRequestUpload = (new XMLHttpRequest()).upload.constructor
 
 // self is required by testharness
 // GLOBAL is required by self
