@@ -1,6 +1,6 @@
 {
   "name": "node-xmlhttprequest",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A spec-compliant version of XMLHttpRequest",
   "main": "index.js",
   "scripts": {
