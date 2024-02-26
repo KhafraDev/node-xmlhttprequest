@@ -862,7 +862,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
 
     // The getResponseHeader(name) method steps are to return the result of
     // getting name from this’s response’s header list.
-    return this[kRequestHeaders].get(toUSVString(name))
+    return this[kResponse].headersList.get(toUSVString(name))
   }
 
   // https://xhr.spec.whatwg.org/#the-getallresponseheaders()-method
@@ -885,7 +885,7 @@ class XMLHttpRequest extends XMLHttpRequestUpload {
     // 4. For each header in headers, append header’s name, followed
     //    by a 0x3A 0x20 byte pair, followed by header’s value,
     //    followed by a 0x0D 0x0A byte pair, to output.
-    for (const [name, value] of this[kRequestHeaders]) {
+    for (const [name, value] of this[kResponse].headersList) {
       output += `${name}: ${value}\r\n`
     }
 
